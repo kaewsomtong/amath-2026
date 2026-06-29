@@ -58,8 +58,8 @@ export async function POST(req: NextRequest) {
 
   if (action === 'save') {
     const { round, pair_num, score_a, score_b } = body as { round: string; pair_num: number; score_a: number; score_b: number }
-    if (!Number.isInteger(score_a) || !Number.isInteger(score_b) || score_a < 0 || score_b < 0) {
-      return NextResponse.json({ error: 'คะแนนต้องเป็นจำนวนเต็มที่ไม่ติดลบ' }, { status: 400 })
+    if (!Number.isInteger(score_a) || !Number.isInteger(score_b)) {
+      return NextResponse.json({ error: 'คะแนนต้องเป็นจำนวนเต็ม' }, { status: 400 })
     }
     const { error } = await supabase.from('am_playoffs')
       .update({ score_a, score_b })

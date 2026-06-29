@@ -25,9 +25,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'คู่นี้เป็น BYE — ระบบบันทึกชนะให้อัตโนมัติแล้ว ไม่ต้องกรอก' }, { status: 400 })
   }
 
-  // ตรวจสอบ score ต้องเป็น integer ≥ 0
-  if (!Number.isInteger(score_a) || !Number.isInteger(score_b) || score_a < 0 || score_b < 0) {
-    return NextResponse.json({ error: 'คะแนนต้องเป็นจำนวนเต็มที่ไม่ติดลบ' }, { status: 400 })
+  // ตรวจสอบ score ต้องเป็น integer (ติดลบได้ กรณีผู้เล่นมีตัวเลขค้างมาก)
+  if (!Number.isInteger(score_a) || !Number.isInteger(score_b)) {
+    return NextResponse.json({ error: 'คะแนนต้องเป็นจำนวนเต็ม' }, { status: 400 })
   }
 
   // กันชน: ถ้าไม่ force และมีผลอยู่แล้ว → 409 ให้ฝั่งหน้าเว็บถามยืนยันทับ
