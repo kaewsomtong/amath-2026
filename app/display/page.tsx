@@ -285,8 +285,10 @@ export default function DisplayPage() {
                           ? <span className="text-sky-500">🎁 {disp(r.player_a)} ได้ BYE</span>
                           : <span>
                               <span className="font-black">{disp(r.player_a)}</span>
+                              <span className="text-sky-400 ml-1">({r.player_a.code})</span>
                               <span className="text-sky-500 font-black mx-2">VS</span>
                               <span className="font-black">{r.player_b ? disp(r.player_b) : '—'}</span>
+                              {r.player_b && <span className="text-sky-400 ml-1">({r.player_b.code})</span>}
                             </span>
                         }
                       </div>
