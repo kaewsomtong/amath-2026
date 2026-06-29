@@ -223,7 +223,7 @@ export default function ScoringPage() {
     : sa < sb ? 'bg-red-100 text-red-800 border-red-300'
     : 'bg-gray-100 text-gray-700 border-gray-200'
 
-  const subLabel = pairNum ? `คู่ที่ ${pairNum}` : ''
+  const subLabel = pairNum ? `โต๊ะที่ ${pairNum}` : ''
   const submitLabel = mode === 'qualify' && (lookupState === 'ok' || lookupState === 'warn')
     ? `🚀 ${lookupState === 'warn' && lookupResult ? '✏️ แก้ไขผล' : 'บันทึกผล'} ${subLabel} เกม ${game}`
     : mode === 'playoff' && currentPlayoff ? `🚀 บันทึก${pfRound}`
@@ -393,18 +393,16 @@ export default function ScoringPage() {
           )}
 
           {/* Player cards */}
-          {(nameA || nameB) && (
+          {(codeA || codeB) && (
             <div className="flex gap-2 items-center">
               <div className="flex-1 rounded-2xl p-3 border-2 border-sky-100 bg-sky-50 text-center">
-                <p className="text-[10px] font-black text-sky-400 uppercase tracking-wider mb-0.5">ฝั่ง A</p>
-                <p className="font-black text-amber-500 text-lg leading-tight">{codeA || '—'}</p>
-                <p className="text-xs text-sky-500 truncate">{nameA}</p>
+                <p className="text-[10px] font-black text-sky-400 uppercase tracking-wider mb-1">ฝั่ง A</p>
+                <p className="font-black text-amber-500 text-2xl leading-tight">{codeA || '—'}</p>
               </div>
               <div className="font-black text-sky-300 text-xl">VS</div>
               <div className="flex-1 rounded-2xl p-3 border-2 border-sky-100 bg-sky-50 text-center">
-                <p className="text-[10px] font-black text-sky-400 uppercase tracking-wider mb-0.5">ฝั่ง B</p>
-                <p className="font-black text-amber-500 text-lg leading-tight">{codeB || '—'}</p>
-                <p className="text-xs text-sky-500 truncate">{nameB}</p>
+                <p className="text-[10px] font-black text-sky-400 uppercase tracking-wider mb-1">ฝั่ง B</p>
+                <p className="font-black text-amber-500 text-2xl leading-tight">{codeB || '—'}</p>
               </div>
             </div>
           )}
