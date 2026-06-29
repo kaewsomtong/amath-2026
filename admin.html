@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แผงแอดมิน A-Math - Math Week 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue-dark: #14532d; --blue-mid: #16a34a; --blue-light: #dcfce7;
+            --bg: #f0fdf4; --white: #ffffff; --text: #1e293b; --muted: #64748b; --border: #e2e8f0;
+            --green: #16a34a; --red: #dc2626; --amber: #d97706;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
+
+        .header { background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-mid) 100%); border-radius: 24px; padding: 24px 28px; text-align: center; margin-bottom: 24px; box-shadow: 0 8px 30px rgba(20,83,45,0.28); }
+        .header h1 { font-family: 'Nunito', sans-serif; font-size: 24px; font-weight: 900; color: var(--white); }
+        .header .subtitle { font-size: 13px; font-weight: 700; color: #bfdbfe; margin-top: 6px; }
+
+        .level-toggle { max-width: 720px; margin: 0 auto 20px; display: flex; background: var(--white); border-radius: 14px; padding: 6px; border: 2px solid #86efac; box-shadow: 0 2px 10px rgba(22,163,74,0.08); }
+        .level-toggle button { flex: 1; padding: 12px; border: none; background: transparent; border-radius: 10px; font-family: 'Sarabun', sans-serif; font-weight: 800; font-size: 15px; color: var(--muted); cursor: pointer; }
+        .level-toggle button.active { background: var(--blue-mid); color: var(--white); }
+
+        .card { max-width: 720px; margin: 0 auto 20px; background: var(--white); border-radius: 20px; padding: 26px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid var(--border); }
+        .section-label { font-size: 15px; font-weight: 800; color: var(--blue-dark); margin-bottom: 12px; display: flex; align-items: center; gap: 7px; }
+
+        .tip { background: #f8fafc; border-left: 4px solid var(--blue-mid); border-radius: 10px; padding: 10px 14px; font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 16px; }
+
+        .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 12px; }
+        .game-btn { padding: 16px 8px; border-radius: 14px; border: 2px solid #86efac; background: var(--blue-light); font-family: 'Sarabun', sans-serif; font-weight: 800; font-size: 14px; color: var(--blue-dark); cursor: pointer; text-align: center; line-height: 1.4; }
+        .game-btn:hover { background: #bfdbfe; }
+        .game-btn.done { background: #dcfce7; border-color: var(--green); color: #166534; }
+        .game-btn.active-game { background: var(--blue-mid); color: var(--white); border-color: var(--blue-dark); }
+
+        .btn-add-game { padding: 14px 20px; border-radius: 12px; border: 2px dashed #86efac; background: transparent; font-family: 'Sarabun', sans-serif; font-weight: 800; font-size: 14px; color: var(--blue-mid); cursor: pointer; }
+        .btn-add-game:hover { background: var(--blue-light); }
+
+        .btn-primary { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-mid) 100%); color: var(--white); border: none; border-radius: 12px; font-family: 'Sarabun', sans-serif; font-size: 16px; font-weight: 800; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 14px rgba(22,163,74,0.25); }
+        .btn-secondary { background: var(--white); color: var(--blue-dark); border: 2px solid var(--blue-mid); box-shadow: none; }
+        .btn-danger { background: linear-gradient(135deg, #991b1b, var(--red)); }
+
+        .status-box { margin-top: 12px; padding: 11px 14px; border-radius: 10px; font-weight: 700; font-size: 13px; display: none; }
+        .status-ok  { background: #dcfce7; color: #166534; }
+        .status-err { background: #fee2e2; color: #991b1b; }
+
+        .pair-list { margin-top: 16px; }
+        .pair-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f0f9ff; border-radius: 10px; margin-bottom: 8px; border: 1px solid #86efac; font-size: 14px; }
+        .pair-num { font-weight: 900; color: var(--blue-dark); min-width: 60px; }
+        .pair-info { flex: 1; }
+        .pair-bye { color: var(--amber); font-style: italic; font-size: 12px; }
+
+        .standings-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+        .standings-table th { background: var(--blue-dark); color: white; padding: 9px 8px; text-align: center; }
+        .standings-table td { padding: 9px 8px; text-align: center; border-bottom: 1px solid var(--border); }
+        .standings-table td.name-col { text-align: left; padding-left: 12px; }
+        .cert-yes { color: var(--green); font-weight: 800; }
+        .cert-no  { color: var(--muted); }
+
+        .awards-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 8px; border-radius: 12px; border: 1px solid #86efac; }
+        .awards-row.cert { background: #ecfdf5; border-color: #86efac; }
+        .awards-row .rnk { font-size: 18px; min-width: 36px; text-align: center; }
+        .awards-row .info { flex: 1; font-size: 14px; }
+        .awards-meta { font-size: 13px; color: var(--muted); padding: 10px 14px; background: #f8fafc; border-radius: 10px; margin-bottom: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🔢 แผงแอดมิน A-Math</h1>
+    <div class="subtitle">Math Week 2026 • โรงเรียนพูลเจริญวิทยาคม</div>
+</div>
+
+<!-- Level Toggle -->
+<div class="level-toggle">
+    <button id="btnLvlJ" class="active" onclick="switchLevel('มต้น')">🏫 ม.ต้น (ทีม 2 คน)</button>
+    <button id="btnLvlS" onclick="switchLevel('มปลาย')">🎓 ม.ปลาย (เดี่ยว)</button>
+</div>
+
+<!-- Game Management -->
+<div class="card">
+    <div class="section-label">🎮 จัดการเกม — <span id="totalGamesLabel" style="color:var(--blue-mid);">รวม 3 เกม</span></div>
+    <div class="tip">
+        <strong>เกม 1:</strong> สุ่มจับคู่ &nbsp;|&nbsp;
+        <strong>เกม 2-3+:</strong> King of the Hill (จับคู่ตามอันดับ: 1 vs 2, 3 vs 4, ...)
+        <br>กด <strong>"เพิ่มเกม"</strong> หลังเกมสุดท้ายเพื่อเพิ่มรอบ — ระบบจะใช้ King of the Hill
+    </div>
+
+    <div class="game-grid" id="gameGrid">
+        <!-- สร้าง dynamic -->
+    </div>
+    <button class="btn-add-game" onclick="addGame()">➕ เพิ่มเกม</button>
+
+    <div id="pairStatus" class="status-box"></div>
+    <div id="pairList" class="pair-list"></div>
+</div>
+
+<!-- Standings -->
+<div class="card">
+    <div class="section-label">📊 ตารางอันดับปัจจุบัน</div>
+    <button class="btn-primary btn-secondary" onclick="loadStandings()">🔄 โหลด/รีเฟรช</button>
+    <div id="standingsBox"></div>
+</div>
+
+<!-- Awards -->
+<div class="card">
+    <div class="section-label">🏅 สรุปผลและเกียรติบัตร (เกณฑ์ร้อยละ 60)</div>
+    <button class="btn-primary btn-secondary" onclick="loadAwards()">🔄 โหลด/รีเฟรช</button>
+    <div id="awardsBox"></div>
+</div>
+
+<script>
+let currentLevel = 'มต้น';
+let totalGames = 3;
+
+function switchLevel(level) {
+    currentLevel = level;
+    document.getElementById('btnLvlJ').classList.toggle('active', level === 'มต้น');
+    document.getElementById('btnLvlS').classList.toggle('active', level === 'มปลาย');
+    document.getElementById('pairList').innerHTML = '';
+    document.getElementById('standingsBox').innerHTML = '';
+    document.getElementById('awardsBox').innerHTML = '';
+    refreshTotalGames();
+}
+
+function showStatus(id, msg, isErr) {
+    const el = document.getElementById(id);
+    el.style.display = 'block';
+    el.className = 'status-box ' + (isErr ? 'status-err' : 'status-ok');
+    el.innerHTML = msg;
+}
+
+function refreshTotalGames() {
+    google.script.run
+        .withSuccessHandler(n => {
+            totalGames = n;
+            document.getElementById('totalGamesLabel').innerText = 'รวม ' + n + ' เกม';
+            renderGameGrid(n);
+        })
+        .withFailureHandler(() => {})
+        .amGetTotalGames();
+}
+
+function renderGameGrid(total) {
+    const grid = document.getElementById('gameGrid');
+    grid.innerHTML = '';
+    for (let g = 1; g <= total; g++) {
+        const btn = document.createElement('button');
+        btn.className = 'game-btn';
+        btn.id = 'gameBtn' + g;
+        if (g === 1) {
+            btn.innerHTML = 'เกม 1<br><small>🎲 สุ่มจับคู่</small>';
+            btn.onclick = () => generateGame(1);
+        } else {
+            btn.innerHTML = 'เกม ' + g + '<br><small>👑 King of the Hill</small>';
+            const gNum = g;
+            btn.onclick = () => generateGame(gNum);
+        }
+        grid.appendChild(btn);
+    }
+}
+
+function generateGame(gameNum) {
+    document.querySelectorAll('.game-btn').forEach(b => b.classList.remove('active-game'));
+    const btn = document.getElementById('gameBtn' + gameNum);
+    if (btn) btn.classList.add('active-game');
+
+    showStatus('pairStatus', '⏳ กำลังจัดคู่เกม ' + gameNum + ' ...', false);
+    document.getElementById('pairList').innerHTML = '';
+
+    const fn = gameNum === 1 ? 'amGenerateGame1' : 'amGenerateKingOfHill';
+    const args = gameNum === 1 ? [currentLevel] : [currentLevel, gameNum];
+
+    google.script.run
+        .withSuccessHandler(pairs => {
+            renderPairList(pairs, gameNum);
+            showStatus('pairStatus', '✅ จัดคู่เกม ' + gameNum + ' สำเร็จ (' + pairs.length + ' คู่)', false);
+            if (btn) { btn.classList.remove('active-game'); btn.classList.add('done'); }
+        })
+        .withFailureHandler(err => {
+            showStatus('pairStatus', '❌ ' + err.message, true);
+            if (btn) btn.classList.remove('active-game');
+        })
+        [fn].apply(null, args);
+}
+
+function addGame() {
+    google.script.run
+        .withSuccessHandler(res => {
+            totalGames = res.totalGames;
+            document.getElementById('totalGamesLabel').innerText = 'รวม ' + res.totalGames + ' เกม';
+            renderGameGrid(res.totalGames);
+            showStatus('pairStatus', '✅ เพิ่มเกม ' + res.totalGames + ' สำเร็จ (King of the Hill)', false);
+        })
+        .withFailureHandler(err => showStatus('pairStatus', '❌ ' + err.message, true))
+        .amAddGame();
+}
+
+function renderPairList(pairs, gameNum) {
+    const list = document.getElementById('pairList');
+    list.innerHTML = '';
+    if (!pairs || pairs.length === 0) {
+        list.innerHTML = '<p style="color:#94a3b8; text-align:center; padding:10px;">ไม่มีคู่แข่งขัน</p>';
+        return;
+    }
+    pairs.forEach(p => {
+        const row = document.createElement('div');
+        row.className = 'pair-row';
+        if (p.isBye) {
+            const dispA = p.member2A ? p.nameA + ' + ' + p.member2A : p.nameA;
+            row.innerHTML = `<div class="pair-num">โต๊ะ ${p.pairNum}</div>
+                <div class="pair-info">
+                    <strong>${dispA}</strong> <small style="color:var(--muted);">(${p.idA})</small>
+                    <span class="pair-bye"> — ได้ BYE (ชนะอัตโนมัติ +100)</span>
+                </div>`;
+        } else {
+            const dispA = p.member2A ? p.nameA + ' + ' + p.member2A : p.nameA;
+            const dispB = p.member2B ? p.nameB + ' + ' + p.member2B : p.nameB;
+            const subA  = p.schoolA || p.idA;
+            const subB  = p.schoolB || p.idB;
+            row.innerHTML = `<div class="pair-num">โต๊ะ ${p.pairNum}</div>
+                <div class="pair-info">
+                    <strong>${dispA}</strong> <small style="color:var(--muted);">(${subA})</small>
+                    &nbsp;<span style="color:var(--blue-mid); font-weight:900;">VS</span>&nbsp;
+                    <strong>${dispB}</strong> <small style="color:var(--muted);">(${subB})</small>
+                </div>`;
+        }
+        list.appendChild(row);
+    });
+}
+
+function loadStandings() {
+    const box = document.getElementById('standingsBox');
+    box.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:16px;">⏳ กำลังโหลด...</p>';
+    google.script.run
+        .withSuccessHandler(st => {
+            if (!st || st.length === 0) {
+                box.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:16px;">ยังไม่มีข้อมูล</p>';
+                return;
+            }
+            let html = '<table class="standings-table"><thead><tr>' +
+                '<th>อันดับ</th><th>รหัส</th><th>ชื่อ</th><th>โรงเรียน</th><th>W-T-L</th><th>แต้ม</th><th>ผลต่าง</th><th>คะแนนดิบ</th>' +
+                '</tr></thead><tbody>';
+            st.forEach(s => {
+                html += `<tr>
+                    <td><strong>${s.rank}</strong></td>
+                    <td>${s.id}</td>
+                    <td class="name-col">${s.name}</td>
+                    <td class="name-col" style="font-size:12px; color:var(--muted);">${s.school || ''}</td>
+                    <td>${s.wins}-${s.ties}-${s.losses}</td>
+                    <td><strong>${s.points}</strong></td>
+                    <td style="color:${s.diffSum >= 0 ? 'var(--green)' : 'var(--red)'}">
+                        ${s.diffSum >= 0 ? '+' : ''}${s.diffSum}
+                    </td>
+                    <td>${s.rawScoreSum}</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            box.innerHTML = html;
+        })
+        .withFailureHandler(err => {
+            box.innerHTML = '<p style="color:var(--red); text-align:center; padding:16px;">❌ ' + err.message + '</p>';
+        })
+        .amComputeStandings(currentLevel);
+}
+
+function loadAwards() {
+    const box = document.getElementById('awardsBox');
+    box.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:16px;">⏳ กำลังโหลด...</p>';
+    google.script.run
+        .withSuccessHandler(awards => {
+            if (!awards) {
+                box.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:16px;">ยังไม่มีข้อมูล</p>';
+                return;
+            }
+            let html = `<div class="awards-meta">
+                👥 ผู้แข่งขันที่มีผลเกม: <strong>${awards.totalPlayed} ทีม/คน</strong> &nbsp;|&nbsp;
+                🎖️ เกณฑ์เกียรติบัตร (60%): <strong>${awards.cutoffCount} อันดับแรก</strong>
+            </div>`;
+
+            awards.standings.forEach(s => {
+                const hasCert = s.hasCertificate;
+                html += `<div class="awards-row ${hasCert ? 'cert' : ''}">
+                    <div class="rnk">${s.rank <= 3 ? ['🥇','🥈','🥉'][s.rank-1] : s.rank}</div>
+                    <div class="info">
+                        <strong>${s.name}</strong>
+                        ${s.school ? `<small style="color:var(--muted);"> — ${s.school}</small>` : ''}
+                        <br>
+                        <small>รหัส ${s.id} &nbsp;|&nbsp; ${s.wins}W-${s.ties}T-${s.losses}L &nbsp;|&nbsp; แต้ม ${s.points} &nbsp;|&nbsp; ผลต่าง ${s.diffSum >= 0 ? '+' : ''}${s.diffSum}</small>
+                    </div>
+                    <div class="${hasCert ? 'cert-yes' : 'cert-no'}">${hasCert ? '🎖️ ได้' : '—'}</div>
+                </div>`;
+            });
+            box.innerHTML = html;
+        })
+        .withFailureHandler(err => {
+            box.innerHTML = '<p style="color:var(--red); text-align:center; padding:16px;">❌ ' + err.message + '</p>';
+        })
+        .amGetAwardsSummary(currentLevel);
+}
+
+// Init
+refreshTotalGames();
+</script>
+</body>
+</html>

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>กรอกผล A-Math - Math Week 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue-dark: #14532d; --blue-mid: #16a34a; --blue-light: #dcfce7;
+            --bg: #f0fdf4; --white: #ffffff; --text: #1e293b; --muted: #64748b;
+            --green: #16a34a; --red: #dc2626; --amber: #d97706;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 16px; display: flex; flex-direction: column; align-items: center; }
+
+        .header { background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-mid) 100%); width: 100%; max-width: 500px; border-radius: 18px; padding: 20px 22px; text-align: center; color: var(--white); margin-bottom: 14px; box-shadow: 0 6px 24px rgba(20,83,45,0.28); }
+        .header h2 { font-family: 'Nunito', sans-serif; font-size: 20px; font-weight: 900; }
+        .header p { font-size: 12px; color: #bfdbfe; margin-top: 4px; }
+
+        .toggle-bar { display: flex; width: 100%; max-width: 500px; background: var(--white); border-radius: 12px; padding: 5px; margin-bottom: 12px; border: 2px solid #86efac; }
+        .toggle-bar button { flex: 1; padding: 10px; border: none; background: transparent; border-radius: 8px; font-weight: 700; font-size: 13px; color: var(--muted); cursor: pointer; font-family: 'Sarabun', sans-serif; }
+        .toggle-bar button.active { background: var(--blue-mid); color: var(--white); }
+
+        .card { width: 100%; max-width: 500px; background: var(--white); border-radius: 20px; padding: 22px; box-shadow: 0 4px 20px rgba(22,163,74,0.08); border: 1px solid #86efac; margin-bottom: 14px; }
+
+        label { display: block; font-size: 13px; font-weight: 700; color: var(--blue-dark); margin-bottom: 5px; }
+        .form-group { margin-bottom: 14px; }
+
+        select, .input-box {
+            width: 100%; padding: 11px 14px; font-size: 15px; font-weight: 700;
+            font-family: 'Sarabun', sans-serif; border: 2px solid #86efac;
+            border-radius: 10px; background: #f8faff; outline: none; color: var(--text);
+        }
+        select:focus, .input-box:focus { border-color: var(--blue-mid); background: var(--white); }
+
+        .lookup-hint { font-size: 12px; margin-top: 4px; min-height: 16px; }
+
+        .divider { border-top: 1px dashed #86efac; margin: 16px 0; }
+
+        .vs-grid { display: grid; grid-template-columns: 1fr 40px 1fr; gap: 8px; align-items: start; }
+        .vs-label { display: flex; align-items: center; justify-content: center; font-family: 'Nunito', sans-serif; font-weight: 900; color: var(--blue-mid); font-size: 18px; padding-top: 28px; }
+
+        .player-card { background: var(--blue-light); border-radius: 12px; padding: 12px; }
+        .player-card label { color: var(--blue-dark); margin-bottom: 4px; }
+        .player-name { font-size: 13px; font-weight: 700; color: var(--blue-dark); min-height: 18px; margin-top: 4px; }
+        .player-school { font-size: 11px; color: var(--muted); }
+        .score-input { margin-top: 10px; }
+        .score-input .input-box { font-size: 22px; text-align: center; font-family: 'Nunito', sans-serif; font-weight: 900; }
+
+        /* Preview box */
+        .preview-box { background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border: 2px solid #7dd3fc; border-radius: 14px; padding: 16px; margin-top: 14px; display: none; }
+        .preview-title { font-size: 12px; font-weight: 800; color: var(--blue-dark); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 10px; }
+        .preview-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .preview-item { background: var(--white); border-radius: 10px; padding: 10px 8px; text-align: center; border: 1px solid #bae6fd; }
+        .preview-item .lbl { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+        .preview-item .val { font-family: 'Nunito', sans-serif; font-size: 20px; font-weight: 900; margin-top: 3px; }
+        .win  { color: var(--green); }
+        .loss { color: var(--red); }
+        .tie  { color: var(--amber); }
+        .diff-pos { color: var(--green); }
+        .diff-neg { color: var(--red); }
+        .diff-zero { color: var(--muted); }
+        .cap-note { font-size: 11px; color: var(--amber); margin-top: 6px; text-align: center; }
+
+        /* Scoresheet summary */
+        .score-summary { margin-top: 10px; background: #f8faff; border-radius: 10px; padding: 12px 14px; font-size: 13px; }
+        .score-summary .row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #e0f2fe; }
+        .score-summary .row:last-child { border-bottom: none; font-weight: 800; }
+
+        .btn-submit { width: 100%; padding: 16px; background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-mid) 100%); color: var(--white); border: none; border-radius: 12px; font-family: 'Sarabun', sans-serif; font-size: 17px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 16px rgba(20,83,45,0.28); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .status-box { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 10px; font-weight: 700; font-size: 13px; text-align: center; }
+        .status-ok  { background: #dcfce7; color: #166534; }
+        .status-err { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2>✍️ กรอกผลแมตช์ A-Math</h2>
+    <p>Math Week 2026 • โรงเรียนพูลเจริญวิทยาคม</p>
+</div>
+
+<!-- Level -->
+<div class="toggle-bar">
+    <button id="btnLvlJ" class="active" onclick="setLevel('มต้น')">ม.ต้น (ทีม)</button>
+    <button id="btnLvlS" onclick="setLevel('มปลาย')">ม.ปลาย (เดี่ยว)</button>
+</div>
+
+<div class="card">
+    <!-- เกมที่ -->
+    <div class="form-group">
+        <label>🎮 เกมที่:</label>
+        <select id="gameNum" onchange="onGameChange()">
+            <option value="1">เกม 1</option>
+            <option value="2">เกม 2</option>
+            <option value="3">เกม 3</option>
+        </select>
+    </div>
+
+    <!-- คู่ที่ -->
+    <div class="form-group">
+        <label>🪑 โต๊ะที่:</label>
+        <input type="number" id="pairNum" class="input-box" placeholder="เช่น 1" min="1" onblur="lookupPair()">
+        <div id="lookupHint" class="lookup-hint"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- VS Grid -->
+    <div class="vs-grid">
+        <div class="player-card">
+            <label>ฝั่ง A</label>
+            <div class="player-name" id="nameA">—</div>
+            <div class="player-school" id="schoolA"></div>
+            <div class="score-input">
+                <label>คะแนน A:</label>
+                <input type="number" id="scoreA" class="input-box" placeholder="0" min="0" oninput="updatePreview()">
+            </div>
+        </div>
+
+        <div class="vs-label">VS</div>
+
+        <div class="player-card">
+            <label>ฝั่ง B</label>
+            <div class="player-name" id="nameB">—</div>
+            <div class="player-school" id="schoolB"></div>
+            <div class="score-input">
+                <label>คะแนน B:</label>
+                <input type="number" id="scoreB" class="input-box" placeholder="0" min="0" oninput="updatePreview()">
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-box" id="previewBox">
+        <div class="preview-title">👁️ ตรวจสอบผลก่อนบันทึก</div>
+        <div class="preview-grid">
+            <div class="preview-item">
+                <div class="lbl">ผล A</div>
+                <div class="val" id="previewResultA">—</div>
+            </div>
+            <div class="preview-item">
+                <div class="lbl">ผลต่าง (cap)</div>
+                <div class="val" id="previewDiff">—</div>
+            </div>
+            <div class="preview-item">
+                <div class="lbl">ผล B</div>
+                <div class="val" id="previewResultB">—</div>
+            </div>
+        </div>
+        <div class="score-summary" id="scoreSummary"></div>
+        <div class="cap-note" id="capNote"></div>
+    </div>
+
+    <button class="btn-submit" id="btnSubmit" style="margin-top:16px;" onclick="submitResult()" disabled>
+        🚀 บันทึกผล
+    </button>
+    <div id="statusBox" class="status-box"></div>
+</div>
+
+<script>
+    let currentLevel = 'มต้น';
+    let currentPairData = null;
+    let userChangedGame = false;
+    let totalGames = 3;
+
+    // ───── Init ─────
+    loadTotalGames(true);
+
+    // ───── Level ─────
+    function setLevel(lv) {
+        currentLevel = lv;
+        document.getElementById('btnLvlJ').classList.toggle('active', lv === 'มต้น');
+        document.getElementById('btnLvlS').classList.toggle('active', lv === 'มปลาย');
+        clearAll();
+        userChangedGame = false;
+        loadTotalGames(true);
+    }
+
+    // ───── Load game count & auto-select latest ─────
+    function loadTotalGames(forceSelect) {
+        google.script.run
+            .withSuccessHandler(n => {
+                totalGames = n || 3;
+                rebuildGameDropdown(n);
+                // Auto-select เกมล่าสุดที่จัดคู่ไว้
+                if (forceSelect && !userChangedGame) {
+                    google.script.run
+                        .withSuccessHandler(latest => {
+                            if (latest > 0 && latest <= n) {
+                                document.getElementById('gameNum').value = String(latest);
+                            }
+                        })
+                        .withFailureHandler(() => {})
+                        .amGetLatestGame(currentLevel);
+                }
+            })
+            .withFailureHandler(() => {})
+            .amGetTotalGames();
+    }
+
+    function rebuildGameDropdown(total) {
+        const sel = document.getElementById('gameNum');
+        const cur = sel.value;
+        sel.innerHTML = '';
+        for (let g = 1; g <= total; g++) {
+            const opt = document.createElement('option');
+            opt.value = g;
+            opt.text  = 'เกม ' + g + (g === 1 ? ' (สุ่ม)' : ' (King)');
+            sel.appendChild(opt);
+        }
+        if (cur && Number(cur) <= total) sel.value = cur;
+    }
+
+    function onGameChange() {
+        userChangedGame = true;
+        clearAll();
+    }
+
+    // ───── Pair Lookup ─────
+    function lookupPair() {
+        const gameNum = document.getElementById('gameNum').value;
+        const pairNum = document.getElementById('pairNum').value.trim();
+        const hint = document.getElementById('lookupHint');
+        clearPlayerDisplay();
+        currentPairData = null;
+        updatePreview();
+        if (!pairNum) return;
+
+        hint.style.color = '#64748b';
+        hint.innerText = '⏳ กำลังค้นหา...';
+
+        google.script.run
+            .withSuccessHandler(res => {
+                if (!res.found) {
+                    hint.style.color = '#b45309';
+                    hint.innerText = '⚠️ ' + res.message;
+                    return;
+                }
+                currentPairData = res;
+                const dispA = res.member2A ? (res.nameA || res.idA) + ' + ' + res.member2A : (res.nameA || res.idA);
+                const dispB = res.isBye ? 'BYE' : (res.member2B ? (res.nameB || res.idB) + ' + ' + res.member2B : (res.nameB || res.idB));
+                document.getElementById('nameA').innerText = dispA;
+                document.getElementById('schoolA').innerText = res.schoolA || '';
+                document.getElementById('nameB').innerText = dispB;
+                document.getElementById('schoolB').innerText = res.schoolB || '';
+
+                if (res.isBye) {
+                    hint.style.color = '#0369a1';
+                    hint.innerText = 'ℹ️ คู่นี้เป็น BYE — ระบบบันทึกชนะให้อัตโนมัติแล้ว ไม่ต้องกรอกคะแนน';
+                    document.getElementById('btnSubmit').disabled = true;
+                } else {
+                    hint.style.color = '#16a34a';
+                    hint.innerText = '✅ พบข้อมูลคู่แข่งขันแล้ว กรอกคะแนนได้เลย';
+                    document.getElementById('btnSubmit').disabled = false;
+                }
+            })
+            .withFailureHandler(err => {
+                hint.style.color = '#dc2626';
+                hint.innerText = '❌ ' + err.message;
+            })
+            .amLookupPair(currentLevel, gameNum, pairNum);
+    }
+
+    // ───── Preview ─────
+    function updatePreview() {
+        const sA = document.getElementById('scoreA').value;
+        const sB = document.getElementById('scoreB').value;
+        const preview = document.getElementById('previewBox');
+        const btnSubmit = document.getElementById('btnSubmit');
+
+        if (!currentPairData || currentPairData.isBye || sA === '' || sB === '') {
+            preview.style.display = 'none';
+            if (!currentPairData || currentPairData.isBye) btnSubmit.disabled = true;
+            return;
+        }
+
+        const scoreA = Number(sA), scoreB = Number(sB);
+        const gameNum = Number(document.getElementById('gameNum').value);
+        const cap = (gameNum === totalGames) ? 200 : 250;
+        const rawDiff = scoreA - scoreB;
+        const diff = Math.max(-cap, Math.min(cap, rawDiff));
+
+        let resultA, resultB, resultClass;
+        if (rawDiff > 0)      { resultA = 'W'; resultB = 'L'; resultClass = 'win'; }
+        else if (rawDiff < 0) { resultA = 'L'; resultB = 'W'; resultClass = 'loss'; }
+        else                  { resultA = 'T'; resultB = 'T'; resultClass = 'tie'; }
+
+        document.getElementById('previewResultA').className = 'val ' + resultClass;
+        document.getElementById('previewResultA').innerText = resultA;
+        document.getElementById('previewResultB').className = 'val ' + (resultClass === 'win' ? 'loss' : resultClass === 'loss' ? 'win' : 'tie');
+        document.getElementById('previewResultB').innerText = resultB;
+
+        const diffEl = document.getElementById('previewDiff');
+        diffEl.className = 'val ' + (diff > 0 ? 'diff-pos' : diff < 0 ? 'diff-neg' : 'diff-zero');
+        diffEl.innerText = (diff >= 0 ? '+' : '') + diff;
+
+        // Score summary
+        const summaryEl = document.getElementById('scoreSummary');
+        summaryEl.innerHTML = `
+            <div class="row"><span>คะแนนดิบ A (1)</span><span>${scoreA}</span></div>
+            <div class="row"><span>คะแนนดิบ B (2)</span><span>${scoreB}</span></div>
+            <div class="row"><span>ผลต่างเกมนี้ (3)=(1)-(2) ก่อน cap</span><span>${rawDiff >= 0 ? '+' : ''}${rawDiff}</span></div>
+            <div class="row"><span>ผลต่างสะสม (cap ±${cap})</span><span>${diff >= 0 ? '+' : ''}${diff}</span></div>
+        `;
+
+        // Cap note
+        const capNote = document.getElementById('capNote');
+        if (Math.abs(rawDiff) > cap) {
+            capNote.innerText = '⚠️ ผลต่างจริง ' + (rawDiff >= 0 ? '+' : '') + rawDiff + ' เกิน ±' + cap + ' — ถูกจำกัดเป็น ' + (diff >= 0 ? '+' : '') + diff;
+            capNote.style.display = 'block';
+        } else {
+            capNote.style.display = 'none';
+        }
+        if (gameNum === totalGames) {
+            capNote.innerText = (capNote.style.display === 'none' ? '' : capNote.innerText + ' ') + '(เกมสุดท้าย: cap ±200)';
+            capNote.style.display = 'block';
+        }
+
+        preview.style.display = 'block';
+        btnSubmit.disabled = false;
+    }
+
+    // ───── Submit ─────
+    function submitResult() {
+        if (!currentPairData || currentPairData.isBye) return;
+        const gameNum = document.getElementById('gameNum').value;
+        const pairNum = document.getElementById('pairNum').value;
+        const scoreA  = document.getElementById('scoreA').value;
+        const scoreB  = document.getElementById('scoreB').value;
+
+        if (scoreA === '' || scoreB === '') { alert('กรุณากรอกคะแนนทั้งสองฝั่ง'); return; }
+
+        const statusBox = document.getElementById('statusBox');
+        statusBox.style.display = 'block';
+        statusBox.className = 'status-box';
+        statusBox.innerText = '⏳ กำลังบันทึก...';
+
+        google.script.run
+            .withSuccessHandler(() => {
+                const rawDiff = Number(scoreA) - Number(scoreB);
+                const cap = (Number(gameNum) === totalGames) ? 200 : 250;
+                const diff = Math.max(-cap, Math.min(cap, rawDiff));
+                const result = rawDiff > 0 ? 'ฝั่ง A ชนะ' : rawDiff < 0 ? 'ฝั่ง B ชนะ' : 'เสมอ';
+                const cappedNote = Math.abs(rawDiff) > cap ? ` (cap ±${cap})` : '';
+
+                statusBox.className = 'status-box status-ok';
+                statusBox.innerHTML = `✅ บันทึกสำเร็จ — เกม ${gameNum} คู่ ${pairNum} — ${result}, ผลต่าง ${diff >= 0 ? '+' : ''}${diff}${cappedNote}`;
+                clearAll();
+                document.getElementById('pairNum').focus();
+                // ไม่รีเซ็ต game dropdown — ให้ครูกรอกคู่ถัดไปในเกมเดียวกัน
+            })
+            .withFailureHandler(err => {
+                statusBox.className = 'status-box status-err';
+                statusBox.innerText = '❌ ' + err.message;
+            })
+            .amSaveResult(currentLevel, gameNum, pairNum, currentPairData.idA, scoreA, currentPairData.idB, scoreB);
+    }
+
+    // ───── Helpers ─────
+    function clearPlayerDisplay() {
+        document.getElementById('nameA').innerText = '—';
+        document.getElementById('schoolA').innerText = '';
+        document.getElementById('nameB').innerText = '—';
+        document.getElementById('schoolB').innerText = '';
+        document.getElementById('lookupHint').innerText = '';
+    }
+
+    function clearAll() {
+        clearPlayerDisplay();
+        document.getElementById('pairNum').value = '';
+        document.getElementById('scoreA').value = '';
+        document.getElementById('scoreB').value = '';
+        document.getElementById('previewBox').style.display = 'none';
+        document.getElementById('btnSubmit').disabled = true;
+        currentPairData = null;
+    }
+
+    // Auto-refresh game count every 30s (เผื่อ Admin เพิ่มเกม)
+    setInterval(() => loadTotalGames(false), 30000);
+</script>
+</body>
+</html>
