@@ -40,10 +40,27 @@ export default function DisplayPage() {
 
   useEffect(() => {
     if (!autoRotate) return
-    const id = setInterval(() => setView(v => views[(views.indexOf(v) + 1) % views.length]), 15000)
+    // Projector rotates every 20 sec, normal every 15 sec
+    const ms = projector ? 20000 : 15000
+    const id = setInterval(() => setView(v => views[(views.indexOf(v) + 1) % views.length]), ms)
     return () => clearInterval(id)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoRotate])
+  }, [autoRotate, projector])
+
+  // Enable auto-rotate + dark mode + fullscreen when projector turns on
+  useEffect(() => {
+    if (projector) {
+      setAutoRotate(true)
+      setDark(true)
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {})
+      }
+    } else {
+      setAutoRotate(false)
+      setDark(false)
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+    }
+  }, [projector])
 
   const loadAll = useCallback(async () => {
     const [settingsRes, standingsRes, pfRes] = await Promise.all([
@@ -127,14 +144,266 @@ export default function DisplayPage() {
   const disp = (p: Player) => p.member2 ? `${p.name} + ${p.member2}` : p.name
   const awards = getAwards()
 
+  // Projector-mode text sizes — much larger for distant viewing
   const sz = projector
-    ? { name: 'text-xl', stat: 'text-lg', pts: 'text-2xl', cell: 'p-4', award: 'text-7xl', awardName: 'text-3xl', awardSub: 'text-base' }
+    ? { name: 'text-3xl', stat: 'text-2xl', pts: 'text-4xl', cell: 'p-5', award: 'text-9xl', awardName: 'text-5xl', awardSub: 'text-2xl' }
     : { name: 'text-base', stat: 'text-sm', pts: 'text-lg', cell: 'p-3', award: 'text-5xl', awardName: 'text-xl', awardSub: 'text-sm' }
 
-  const dk = dark
-    ? { bg: '#0c1a2e', card: '#0f2340', border: '#1e3a5f', text: 'text-sky-100', subtext: 'text-sky-400', thead: '#075985', rowEven: 'bg-sky-950/20' }
-    : { bg: '#F0F9FF', card: 'white', border: '#BAE6FD', text: 'text-gray-900', subtext: 'text-sky-500', thead: '#0369A1', rowEven: 'bg-sky-50/40' }
+  // Dark is always true in projector mode
+  const effectiveDark = projector || dark
+  const dk = effectiveDark
+    ? { bg: '#050d1a', card: '#0a1628', border: '#1e3a5f', text: 'text-sky-50', subtext: 'text-sky-400', thead: '#0c4a6e', rowEven: 'bg-sky-900/20', rowOdd: 'bg-transparent' }
+    : { bg: '#F0F9FF', card: 'white', border: '#BAE6FD', text: 'text-gray-900', subtext: 'text-sky-500', thead: '#0369A1', rowEven: 'bg-sky-50/40', rowOdd: '' }
 
+  // Rows to show — top 10 in projector, all in normal
+  const standingsToShow = projector ? standings.slice(0, 10) : standings
+
+  // ── PROJECTOR LAYOUT ──
+  if (projector) {
+    return (
+      <div className="min-h-screen flex flex-col overflow-hidden transition-colors duration-300" style={{ background: dk.bg }}>
+        {/* Projector header bar */}
+        <div className="flex items-center justify-between px-8 py-4 shrink-0" style={{ background: '#061020', borderBottom: '2px solid #1e3a5f' }}>
+          <div className="flex items-center gap-6">
+            <span className="font-black text-white tabular-nums text-4xl">{clock}</span>
+            <div>
+              <h1 className="font-black text-white text-3xl" style={{ fontFamily: "'Nunito',sans-serif" }}>
+                🔢 A-Math — {level === 'มต้น' ? 'ม.ต้น' : 'ม.ปลาย'}
+              </h1>
+              <p className="text-sky-400 text-base font-semibold">โรงเรียนพูลเจริญวิทยาคม {latestGame > 0 ? `· เกมที่ ${latestGame}/${totalGames}` : ''}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            {/* View pills — minimal, no label */}
+            <div className="flex gap-2">
+              {([['standings', '📊'], ['tables', '🪑'], ['playoff', '🏆'], ['awards', '🎖️']] as [View, string][]).map(([v, emoji]) => (
+                <button key={v} onClick={() => { setView(v); setAutoRotate(false) }}
+                  className={`w-12 h-12 rounded-xl text-2xl font-black transition-all ${view === v ? 'bg-sky-600 text-white' : 'bg-sky-900/40 text-sky-500 hover:bg-sky-800/60'}`}>
+                  {emoji}
+                </button>
+              ))}
+            </div>
+            {/* Level toggle */}
+            <button onClick={() => setLevel(l => l === 'มต้น' ? 'มปลาย' : 'มต้น')}
+              className="px-4 py-2.5 rounded-xl bg-sky-800/60 text-sky-200 font-black text-lg hover:bg-sky-700/80 transition">
+              {level === 'มต้น' ? '🌱' : '🌸'}
+            </button>
+            {/* Auto-rotate toggle */}
+            <button onClick={() => setAutoRotate(v => !v)}
+              className={`px-4 py-2.5 rounded-xl font-black text-lg transition-all ${autoRotate ? 'bg-emerald-600/70 text-white' : 'bg-sky-900/40 text-sky-500 hover:bg-sky-800/60'}`}>
+              {autoRotate ? '⏸️' : '▶️'}
+            </button>
+            {/* Exit projector */}
+            <button onClick={() => setProjector(false)}
+              className="px-5 py-2.5 rounded-xl bg-red-900/60 text-red-300 font-black text-lg hover:bg-red-800/80 transition">
+              ✕ ออก
+            </button>
+          </div>
+        </div>
+
+        {/* Announcement banner */}
+        {announcement && (
+          <div className="mx-8 mt-4 rounded-2xl p-4 text-center font-black text-white text-3xl shadow-xl animate-pulse shrink-0"
+            style={{ background: 'linear-gradient(135deg,#dc2626,#b91c1c)' }}>
+            📢 {announcement}
+            <button onClick={() => setAnnouncement(null)} className="ml-4 text-xl opacity-70 hover:opacity-100">✕</button>
+          </div>
+        )}
+
+        {/* Projector content */}
+        <div className="flex-1 px-8 py-4 overflow-hidden">
+
+          {/* ── STANDINGS (projector) ── */}
+          {view === 'standings' && (
+            <div className="h-full rounded-3xl overflow-hidden border" style={{ background: dk.card, borderColor: dk.border }}>
+              <div className="px-6 py-3 text-white font-black text-2xl flex justify-between items-center" style={{ background: dk.thead }}>
+                <span>📊 ตารางอันดับ</span>
+                {standings.length > 10 && <span className="text-sky-200 text-lg">แสดง 10 อันดับแรก</span>}
+              </div>
+              <div className="overflow-auto h-[calc(100%-60px)]">
+                <table className="w-full">
+                  <thead className="sticky top-0" style={{ background: dk.thead }}>
+                    <tr className="text-sky-200">
+                      <th className={`${sz.cell} text-center font-black w-24`}>อันดับ</th>
+                      <th className={`${sz.cell} text-left font-black`}>ชื่อ-สกุล</th>
+                      <th className={`${sz.cell} text-center font-black w-40`}>ห้อง</th>
+                      <th className={`${sz.cell} text-center font-black w-36`}>W-T-L</th>
+                      <th className={`${sz.cell} text-center font-black w-32`}>แต้ม</th>
+                      <th className={`${sz.cell} text-center font-black w-36`}>ผลต่าง</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {standingsToShow.length === 0 && (
+                      <tr><td colSpan={6} className="text-center py-24 text-sky-500 text-3xl">ยังไม่มีข้อมูล</td></tr>
+                    )}
+                    {standingsToShow.map((s, i) => (
+                      <tr key={s.player.id}
+                        className={`border-b transition-colors ${i === 0 ? 'bg-yellow-900/30' : i === 1 ? 'bg-slate-700/20' : i === 2 ? 'bg-orange-900/20' : i % 2 === 0 ? 'bg-sky-900/10' : ''}`}
+                        style={{ borderColor: dk.border }}>
+                        <td className={`${sz.cell} text-center`}>
+                          <span className={`inline-flex items-center justify-center w-14 h-14 rounded-full font-black text-2xl
+                            ${i === 0 ? 'bg-amber-400 text-white' : i === 1 ? 'bg-slate-400 text-white' : i === 2 ? 'bg-orange-400 text-white' : 'bg-sky-800/60 text-sky-200'}`}>
+                            {i < 3 ? ['🥇', '🥈', '🥉'][i] : s.rank}
+                          </span>
+                        </td>
+                        <td className={`${sz.cell} font-black ${sz.name} text-sky-50`}>
+                          {disp(s.player)}
+                          <span className="font-normal text-sky-400 ml-2 text-xl">({s.player.code})</span>
+                        </td>
+                        <td className={`${sz.cell} text-center ${sz.stat} text-sky-400`}>{s.player.school}</td>
+                        <td className={`${sz.cell} text-center ${sz.stat} text-sky-300 font-bold`}>{s.wins}-{s.ties}-{s.losses}</td>
+                        <td className={`${sz.cell} text-center font-black ${sz.pts} text-white`}>{s.points}</td>
+                        <td className={`${sz.cell} text-center font-black ${sz.stat} ${s.diffSum > 0 ? 'text-emerald-400' : s.diffSum < 0 ? 'text-red-400' : 'text-sky-400'}`}>
+                          {s.diffSum > 0 ? '+' : ''}{s.diffSum}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ── TABLES (projector) ── */}
+          {view === 'tables' && (
+            <div className="h-full flex flex-col">
+              <div className="px-4 py-2 rounded-2xl mb-4 text-white font-black text-2xl shrink-0" style={{ background: dk.thead }}>
+                🪑 คู่แข่งเกมที่ {latestGame} — {pairings.filter(p => !p.is_bye).length} คู่
+                &nbsp;·&nbsp;
+                <span className="text-emerald-300">{scoredPairs.size} กรอกแล้ว</span>
+                &nbsp;·&nbsp;
+                <span className="text-red-300">{pairings.filter(p => !p.is_bye).length - scoredPairs.size} คงเหลือ</span>
+              </div>
+              <div className="flex-1 overflow-auto">
+                <div className="grid grid-cols-2 gap-3">
+                  {pairings.map(r => (
+                    <div key={r.pair_num} className="rounded-2xl overflow-hidden border" style={{ background: dk.card, borderColor: dk.border }}>
+                      <div className="px-4 py-2 text-white font-black text-xl flex items-center" style={{ background: dk.thead }}>
+                        โต๊ะ {r.pair_num}
+                        {!r.is_bye && (
+                          <span className={`ml-auto inline-block w-4 h-4 rounded-full ${scoredPairs.has(r.pair_num) ? 'bg-emerald-400' : 'bg-gray-500'}`} />
+                        )}
+                      </div>
+                      <div className="px-4 py-3 text-2xl text-sky-100 font-semibold">
+                        {r.is_bye
+                          ? <span className="text-sky-400">🎁 {disp(r.player_a)} ได้ BYE</span>
+                          : <span>
+                              <span className="font-black">{disp(r.player_a)}</span>
+                              <span className="text-sky-500 font-black mx-2">VS</span>
+                              <span className="font-black">{r.player_b ? disp(r.player_b) : '—'}</span>
+                            </span>
+                        }
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── PLAYOFF (projector) ── */}
+          {view === 'playoff' && (
+            <div className="space-y-4 h-full">
+              {playoffs.length === 0
+                ? <p className="text-center py-24 text-sky-500 text-3xl">ยังไม่มีข้อมูลรอบชิง</p>
+                : playoffs.map((p, i) => {
+                  const cap = AM_MAX_DIFF_FINAL
+                  const r = (p.score_a !== null && p.score_b !== null) ? computeMatchResult(p.score_a, p.score_b, cap) : null
+                  const p1win = r?.resultA === 'W'; const p2win = r?.resultB === 'W'
+                  const hasTie = p.score_a !== null && p.score_b !== null && p.score_a === p.score_b
+                  return (
+                    <div key={i} className="rounded-3xl overflow-hidden border" style={{ background: dk.card, borderColor: dk.border }}>
+                      <div className="px-6 py-3 text-white font-black text-2xl" style={{ background: dk.thead }}>
+                        {p.round === 'ชิงชนะเลิศ' ? '🏆 ชิงชนะเลิศ (อันดับ 1)' : '🥉 ชิงอันดับ 3'}
+                      </div>
+                      <div className="px-6 py-6 flex items-center gap-6">
+                        <div className={`flex-1 text-center p-5 rounded-2xl ${p1win ? 'bg-emerald-900/40 border-2 border-emerald-500' : p2win ? 'bg-red-900/20' : ''}`}>
+                          <p className={`font-black text-4xl ${p1win ? 'text-emerald-300' : p2win ? 'text-red-400' : 'text-sky-100'}`}>{disp(p.player_a)}</p>
+                          <p className="text-sky-400 text-xl">{p.player_a.code}</p>
+                          {p.score_a !== null && <p className="font-black text-6xl text-amber-400 mt-2">{p.score_a}</p>}
+                        </div>
+                        <div className="font-black text-amber-400 text-5xl">VS</div>
+                        <div className={`flex-1 text-center p-5 rounded-2xl ${p2win ? 'bg-emerald-900/40 border-2 border-emerald-500' : p1win ? 'bg-red-900/20' : ''}`}>
+                          <p className={`font-black text-4xl ${p2win ? 'text-emerald-300' : p1win ? 'text-red-400' : 'text-sky-100'}`}>{disp(p.player_b)}</p>
+                          <p className="text-sky-400 text-xl">{p.player_b.code}</p>
+                          {p.score_b !== null && <p className="font-black text-6xl text-amber-400 mt-2">{p.score_b}</p>}
+                        </div>
+                      </div>
+                      {r && !hasTie && (
+                        <div className="px-6 pb-5 text-center">
+                          <span className="text-2xl font-black text-emerald-300 bg-emerald-900/40 px-6 py-2 rounded-full">
+                            ✅ {p1win ? disp(p.player_a) : disp(p.player_b)} ชนะ
+                          </span>
+                        </div>
+                      )}
+                      {hasTie && (
+                        <div className="px-6 pb-5 text-center">
+                          <span className="text-2xl font-black text-amber-300 bg-amber-900/40 px-6 py-2 rounded-full">
+                            ⚠️ เสมอ — กรรมการต้องตัดสิน
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+            </div>
+          )}
+
+          {/* ── AWARDS (projector) ── */}
+          {view === 'awards' && (
+            <div className="h-full flex flex-col justify-center gap-4">
+              {awards.champion && (
+                <div className="rounded-3xl p-6 flex gap-6 items-center border-2 border-yellow-500/60 bg-yellow-900/20 shadow-2xl">
+                  <span className="text-9xl">🥇</span>
+                  <div>
+                    <p className="text-lg font-black text-amber-400 uppercase tracking-widest mb-1">ชนะเลิศ อันดับ 1</p>
+                    <p className="font-black text-5xl text-white">{disp(awards.champion)}</p>
+                    <p className="text-amber-300 text-2xl font-semibold mt-1">{awards.champion.code} · {awards.champion.school}</p>
+                  </div>
+                </div>
+              )}
+              {awards.runnerUp && (
+                <div className="rounded-3xl p-6 flex gap-6 items-center border-2 border-slate-500/60 bg-slate-700/20 shadow-2xl">
+                  <span className="text-9xl">🥈</span>
+                  <div>
+                    <p className="text-lg font-black text-slate-300 uppercase tracking-widest mb-1">รองชนะเลิศ อันดับ 2</p>
+                    <p className="font-black text-5xl text-white">{disp(awards.runnerUp)}</p>
+                    <p className="text-slate-300 text-2xl font-semibold mt-1">{awards.runnerUp.code} · {awards.runnerUp.school}</p>
+                  </div>
+                </div>
+              )}
+              {awards.third && (
+                <div className="rounded-3xl p-6 flex gap-6 items-center border-2 border-orange-500/60 bg-orange-900/20 shadow-2xl">
+                  <span className="text-9xl">🥉</span>
+                  <div>
+                    <p className="text-lg font-black text-orange-400 uppercase tracking-widest mb-1">อันดับ 3</p>
+                    <p className="font-black text-5xl text-white">{disp(awards.third)}</p>
+                    <p className="text-orange-300 text-2xl font-semibold mt-1">{awards.third.code} · {awards.third.school}</p>
+                  </div>
+                </div>
+              )}
+              {!awards.champion && !awards.runnerUp && !awards.third && (
+                <p className="text-center py-24 text-sky-500 text-3xl">⏳ ยังไม่มีผลชิงชนะเลิศ</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Projector footer bar */}
+        <div className="flex items-center justify-between px-8 py-2 shrink-0" style={{ background: '#061020', borderTop: '1px solid #1e3a5f' }}>
+          <span className={`text-sm font-semibold ${realtimeOk ? 'text-emerald-400' : 'text-red-400'}`}>
+            <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${realtimeOk ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`}></span>
+            {realtimeOk ? `Live · อัปเดต ${lastUpdate}` : `ออฟไลน์ · ${lastUpdate}`}
+          </span>
+          <span className="text-sky-500 text-sm font-semibold">
+            {autoRotate ? '▶️ สลับ view อัตโนมัติ' : '⏸️ หยุดสลับ'}
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  // ── NORMAL LAYOUT ──
   return (
     <div className="min-h-screen pb-16 transition-colors duration-300" style={{ background: dk.bg }}>
       {/* Header */}
@@ -147,9 +416,10 @@ export default function DisplayPage() {
               className={`text-xs font-bold px-2 py-1.5 rounded-lg transition ${dark ? 'bg-white text-sky-800' : 'bg-white/20 text-sky-100 hover:bg-white/30'}`}>
               {dark ? '☀️' : '🌙'}
             </button>
-            <button onClick={() => setProjector(v => !v)}
-              className={`text-xs font-bold px-2 py-1.5 rounded-lg transition ${projector ? 'bg-white text-sky-800' : 'bg-white/20 text-sky-100 hover:bg-white/30'}`}>
-              {projector ? '🔍' : '📽️'}
+            <button onClick={() => setProjector(true)}
+              className="text-xs font-bold px-2 py-1.5 rounded-lg bg-white/20 text-sky-100 hover:bg-white/30 transition"
+              title="โหมดโปรเจกเตอร์ — full screen ตัวอักษรใหญ่">
+              📽️
             </button>
             <button onClick={() => setAutoRotate(v => !v)}
               className={`text-xs font-bold px-2 py-1.5 rounded-lg transition ${autoRotate ? 'bg-white text-sky-800' : 'bg-white/20 text-sky-100 hover:bg-white/30'}`}>
@@ -183,7 +453,7 @@ export default function DisplayPage() {
           </div>
           <div className="flex rounded-2xl p-1 border-2 gap-0.5" style={{ background: dk.card, borderColor: dk.border }}>
             {([['standings', '📊 อันดับ'], ['tables', '🪑 โต๊ะ'], ['playoff', '🏆 รอบชิง'], ['awards', '🎖️ รางวัล']] as [View, string][]).map(([v, label]) => (
-              <button key={v} onClick={() => { setView(v); setAutoRotate(false) }}
+              <button key={v} onClick={() => { setView(v as View); setAutoRotate(false) }}
                 className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all ${view === v ? 'text-white shadow' : `${dk.subtext} hover:opacity-80`}`}
                 style={view === v ? { background: 'linear-gradient(135deg,#F59E0B,#FBBF24)' } : {}}>
                 {label}
@@ -249,7 +519,7 @@ export default function DisplayPage() {
           </div>
         )}
 
-        {/* ── TABLES (คู่แข่งเกมปัจจุบัน) ── */}
+        {/* ── TABLES ── */}
         {view === 'tables' && (
           <div>
             {pairings.length === 0

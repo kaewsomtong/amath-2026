@@ -42,6 +42,10 @@ export default function ScoringPage() {
   const [status, setStatus] = useState<{ msg: string; ok: boolean } | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  // สถานะโต๊ะทั้งหมด
+  const [tablePairings, setTablePairings] = useState<{ pair_num: number; is_bye: boolean }[]>([])
+  const [scoredSet, setScoredSet] = useState<Set<number>>(new Set())
+
   const pairNumRef = useRef<HTMLInputElement>(null)
   const scoreARef = useRef<HTMLInputElement>(null)
   const scoreBRef = useRef<HTMLInputElement>(null)
@@ -61,6 +65,26 @@ export default function ScoringPage() {
   }, [level, userPickedGame])
 
   useEffect(() => { fetchGameInfo() }, [fetchGameInfo])
+
+  // โหลดสถานะโต๊ะทั้งหมดของเกมปัจจุบัน
+  const loadTableStatus = useCallback(async () => {
+    if (!game || mode !== 'qualify') return
+    const [{ data: pairs }, { data: games }] = await Promise.all([
+      supabase.from('am_pairings').select('pair_num, is_bye').eq('level', level).eq('game', game).order('pair_num'),
+      supabase.from('am_games').select('pair_num, score_a').eq('level', level).eq('game', game),
+    ])
+    setTablePairings((pairs || []) as { pair_num: number; is_bye: boolean }[])
+    setScoredSet(new Set((games || []).filter((g: { score_a: number | null; pair_num: number }) => g.score_a !== null).map((g: { pair_num: number }) => g.pair_num)))
+  }, [level, game, mode])
+
+  useEffect(() => {
+    if (mode !== 'qualify') { setTablePairings([]); return }
+    loadTableStatus()
+    const ch = supabase.channel(`scoring-status-${level}-${game}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'am_games', filter: `level=eq.${level}` }, loadTableStatus)
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [level, game, mode, loadTableStatus])
 
   useEffect(() => {
     const ch = supabase.channel('broadcast-scoring')
@@ -121,7 +145,6 @@ export default function ScoringPage() {
     setTimeout(() => scoreARef.current?.focus(), 50)
   }
 
-  // Load playoff pairs when mode/round/level changes
   const loadPfPairs = useCallback(async (round: string) => {
     const res = await fetch(`/api/playoffs?level=${encodeURIComponent(level)}`)
     const data: PlayoffRow[] = await res.json()
@@ -155,7 +178,7 @@ export default function ScoringPage() {
       const cap = game === totalGames ? AM_MAX_DIFF_FINAL : AM_MAX_DIFF
       const r = computeMatchResult(sa, sb, cap)
       const diff = Math.max(-cap, Math.min(cap, sa - sb))
-      const winner = r.resultA === 'W' ? nameA : r.resultA === 'L' ? nameB : null
+      const winner = r.resultA === 'W' ? nameA : r.resultB === 'W' ? nameB : null
       setStatus({ msg: `✅ บันทึกคู่ที่ ${lookupResult.pair_num} — ${winner ? winner + ' ชนะ' : 'เสมอ'} (ผลต่าง ${diff > 0 ? '+' : ''}${diff})`, ok: true })
     } else {
       if (!currentPlayoff) { setSubmitting(false); return }
@@ -202,9 +225,13 @@ export default function ScoringPage() {
 
   const subLabel = pairNum ? `คู่ที่ ${pairNum}` : ''
   const submitLabel = mode === 'qualify' && (lookupState === 'ok' || lookupState === 'warn')
-    ? `🚀 ${lookupState === 'warn' ? '✏️ แก้ไขผล' : 'บันทึกผล'} ${subLabel} เกม ${game}`
+    ? `🚀 ${lookupState === 'warn' && lookupResult ? '✏️ แก้ไขผล' : 'บันทึกผล'} ${subLabel} เกม ${game}`
     : mode === 'playoff' && currentPlayoff ? `🚀 บันทึก${pfRound}`
     : '🚀 บันทึกผลแมตช์'
+
+  const nonByePairings = tablePairings.filter(p => !p.is_bye)
+  const pendingCount = nonByePairings.filter(p => !scoredSet.has(p.pair_num)).length
+  const pct = nonByePairings.length > 0 ? Math.round((nonByePairings.length - pendingCount) / nonByePairings.length * 100) : 0
 
   return (
     <div className="min-h-screen flex flex-col items-center p-4 pb-10" style={{ background: '#F0F9FF' }}>
@@ -237,6 +264,47 @@ export default function ScoringPage() {
             </button>
           ))}
         </div>
+
+        {/* ── สถานะโต๊ะทั้งหมด ── */}
+        {mode === 'qualify' && tablePairings.length > 0 && (
+          <div className="bg-white rounded-2xl p-4 border border-sky-100 shadow-sm">
+            <div className="flex justify-between items-center mb-2">
+              <p className="text-xs font-black text-sky-700">📋 ความคืบหน้าเกม {game}</p>
+              <p className="text-xs font-bold text-sky-500">
+                {nonByePairings.length - pendingCount}/{nonByePairings.length} คู่
+                {pendingCount === 0 && nonByePairings.length > 0 && <span className="ml-1 text-green-600">✅ ครบแล้ว!</span>}
+              </p>
+            </div>
+            {/* Progress bar */}
+            <div className="w-full bg-sky-100 rounded-full h-2 mb-3">
+              <div className="h-2 rounded-full transition-all duration-500"
+                style={{ width: `${pct}%`, background: pct === 100 ? '#16a34a' : PRIMARY }} />
+            </div>
+            {/* โต๊ะ pills */}
+            <div className="flex flex-wrap gap-1.5">
+              {tablePairings.map(p => (
+                <button key={p.pair_num} type="button"
+                  onClick={() => {
+                    if (p.is_bye) return
+                    setPairNum(String(p.pair_num))
+                    setTimeout(() => pairNumRef.current?.focus(), 50)
+                  }}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-black border transition-all
+                    ${p.is_bye
+                      ? 'bg-sky-50 text-sky-300 border-sky-100 cursor-default'
+                      : scoredSet.has(p.pair_num)
+                        ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200'
+                        : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100 active:scale-95'
+                    }`}>
+                  {p.pair_num}{p.is_bye ? ' 🎁' : ''}
+                </button>
+              ))}
+            </div>
+            {pendingCount > 0 && (
+              <p className="text-xs text-red-500 font-semibold mt-2">🔴 = ยังไม่ได้กรอก (กดเพื่อเลือก) &nbsp;🟢 = กรอกแล้ว</p>
+            )}
+          </div>
+        )}
 
         <form onSubmit={submitResult} className="bg-white rounded-3xl p-5 shadow-sm border border-sky-100 space-y-4">
           {mode === 'qualify' && (
@@ -288,7 +356,6 @@ export default function ScoringPage() {
 
           {mode === 'playoff' && (
             <>
-              {/* Round toggle */}
               <div className="flex bg-white rounded-2xl p-1.5 border-2 border-pink-100 shadow-sm gap-1">
                 {(['ชิงชนะเลิศ', 'ชิงที่3'] as const).map(r => (
                   <button key={r} type="button" onClick={() => { setPfRound(r); setPfPair(''); setNameA(''); setNameB(''); setScoreA(''); setScoreB(''); setCurrentPlayoff(null) }}
@@ -298,8 +365,6 @@ export default function ScoringPage() {
                   </button>
                 ))}
               </div>
-
-              {/* Pair buttons */}
               {pfPairs.length > 0 ? (
                 <div>
                   <label className="block text-xs font-bold text-sky-700 mb-2">🎯 เลือกคู่</label>
@@ -307,12 +372,9 @@ export default function ScoringPage() {
                     {pfPairs.map(p => (
                       <button key={p.pair_num} type="button"
                         onClick={() => {
-                          setPfPair(String(p.pair_num))
-                          setCurrentPlayoff(p)
-                          setNameA(disp(p.player_a))
-                          setNameB(disp(p.player_b))
-                          setCodeA(p.player_a.code)
-                          setCodeB(p.player_b.code)
+                          setPfPair(String(p.pair_num)); setCurrentPlayoff(p)
+                          setNameA(disp(p.player_a)); setNameB(disp(p.player_b))
+                          setCodeA(p.player_a.code); setCodeB(p.player_b.code)
                           setScoreA(p.score_a !== null ? String(p.score_a) : '')
                           setScoreB(p.score_b !== null ? String(p.score_b) : '')
                           setTimeout(() => scoreARef.current?.focus(), 50)
@@ -336,16 +398,18 @@ export default function ScoringPage() {
               <div className="flex-1 rounded-2xl p-3 border-2 border-sky-100 bg-sky-50 text-center">
                 <p className="text-[10px] font-black text-sky-400 uppercase tracking-wider mb-0.5">ฝั่ง A</p>
                 <p className="font-black text-amber-500 text-lg leading-tight">{codeA || '—'}</p>
+                <p className="text-xs text-sky-500 truncate">{nameA}</p>
               </div>
               <div className="font-black text-sky-300 text-xl">VS</div>
               <div className="flex-1 rounded-2xl p-3 border-2 border-sky-100 bg-sky-50 text-center">
                 <p className="text-[10px] font-black text-sky-400 uppercase tracking-wider mb-0.5">ฝั่ง B</p>
                 <p className="font-black text-amber-500 text-lg leading-tight">{codeB || '—'}</p>
+                <p className="text-xs text-sky-500 truncate">{nameB}</p>
               </div>
             </div>
           )}
 
-          {/* Score inputs — always visible */}
+          {/* Score inputs */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-sky-700 mb-1 text-center truncate">{nameA || 'ผู้เล่น A'}</label>
@@ -370,7 +434,7 @@ export default function ScoringPage() {
             </div>
           )}
 
-          {/* Confirm overwrite dialog */}
+          {/* Confirm overwrite */}
           {confirmOverwrite && (
             <div className="rounded-2xl p-4 border-2 border-sky-200 bg-sky-50 space-y-3">
               <p className="text-sm font-black text-sky-700">⚠️ คู่ที่ {pairNum} เกม {game} มีผลอยู่แล้ว</p>
@@ -386,7 +450,11 @@ export default function ScoringPage() {
             </div>
           )}
 
-          <button type="submit" disabled={submitting || (mode === 'qualify' && lookupState !== 'ok' && lookupState !== 'warn') || (mode === 'qualify' && lookupState === 'warn' && lookupResult === null) || (mode === 'playoff' && !currentPlayoff)}
+          <button type="submit"
+            disabled={submitting
+              || (mode === 'qualify' && lookupState !== 'ok' && lookupState !== 'warn')
+              || (mode === 'qualify' && lookupState === 'warn' && lookupResult === null)
+              || (mode === 'playoff' && !currentPlayoff)}
             className="w-full py-3.5 rounded-2xl font-black text-base text-white shadow-lg transition-all active:scale-95 disabled:opacity-40"
             style={{ background: PRIMARY }}>
             {submitting ? '⏳ กำลังบันทึก...' : submitLabel}
