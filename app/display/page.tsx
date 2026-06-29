@@ -153,8 +153,7 @@ export default function DisplayPage() {
   // Projector always light — สว่าง อ่านง่ายในหอประชุมที่เปิดไฟ
   const pk = { bg: '#F0F9FF', card: 'white', border: '#BAE6FD', thead: '#0369A1' }
 
-  // Rows to show — top 10 in projector, all in normal
-  const standingsToShow = projector ? standings.slice(0, 10) : standings
+  const standingsToShow = standings
 
   // ── PROJECTOR LAYOUT ──
   if (projector) {
@@ -214,9 +213,8 @@ export default function DisplayPage() {
           {/* ── STANDINGS (projector) ── */}
           {view === 'standings' && (
             <div className="h-full rounded-3xl overflow-hidden border shadow-lg" style={{ background: pk.card, borderColor: pk.border }}>
-              <div className="px-6 py-3 text-white font-black text-2xl flex justify-between items-center" style={{ background: pk.thead }}>
-                <span>📊 ตารางอันดับ</span>
-                {standings.length > 10 && <span className="text-sky-200 text-lg">แสดง 10 อันดับแรก</span>}
+              <div className="px-6 py-3 text-white font-black text-2xl" style={{ background: pk.thead }}>
+                📊 ตารางอันดับ
               </div>
               <div className="overflow-auto h-[calc(100%-60px)]">
                 <table className="w-full">
