@@ -292,9 +292,11 @@ export default function ScoringPage() {
                   className={`px-2.5 py-1.5 rounded-lg text-xs font-black border transition-all
                     ${p.is_bye
                       ? 'bg-sky-50 text-sky-300 border-sky-100 cursor-default'
-                      : scoredSet.has(p.pair_num)
-                        ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200'
-                        : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100 active:scale-95'
+                      : String(p.pair_num) === pairNum
+                        ? 'bg-sky-500 text-white border-sky-600 ring-2 ring-sky-300 active:scale-95'
+                        : scoredSet.has(p.pair_num)
+                          ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200'
+                          : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100 active:scale-95'
                     }`}>
                   {p.pair_num}{p.is_bye ? ' 🎁' : ''}
                 </button>
