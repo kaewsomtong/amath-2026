@@ -29,7 +29,6 @@ export default function DisplayPage() {
   const [clock, setClock] = useState('')
   const [announcement, setAnnouncement] = useState<string | null>(null)
   const [reconnectKey, setReconnectKey] = useState(0)
-  const realtimeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const views: View[] = ['standings', 'tables', 'playoff', 'awards']
 
@@ -86,12 +85,12 @@ export default function DisplayPage() {
     }
 
     setLastUpdate(new Date().toLocaleTimeString('th-TH'))
-    setRealtimeOk(true)
-    if (realtimeTimer.current) clearTimeout(realtimeTimer.current)
-    realtimeTimer.current = setTimeout(() => setRealtimeOk(false), 60000)
+    // ไม่ตั้ง timer "นิ่ง = หลุด" อีกต่อไป — สถานะการเชื่อมต่อดูจาก subscribe status จริง
+    // (เดิม: นิ่ง 60 วิ แล้วขึ้นเตือนหลุดทั้งที่เน็ตปกติ ช่วงพัก/ระหว่างเกม)
   }, [level])
 
   useEffect(() => {
+    let active = true   // กัน status callback ทำงานหลัง teardown (removeChannel จะ fire CLOSED เอง)
     loadAll()
     const ch = supabase.channel(`display-${level}-${reconnectKey}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'am_games', filter: `level=eq.${level}` }, loadAll)
@@ -105,18 +104,21 @@ export default function DisplayPage() {
         } else if (bLevel === level || type === 'reset') loadAll()
       })
       .subscribe(status => {
+        if (!active) return   // ละเว้น CLOSED ที่เกิดจากการ teardown เอง
         if (status === 'SUBSCRIBED') {
           setRealtimeOk(true)
           if (reconnectTimer.current) clearTimeout(reconnectTimer.current)
         }
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        // หลุดจริง = การเชื่อมต่อ error/timeout/closed → เตือน + reconnect อัตโนมัติ
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           setRealtimeOk(false)
+          if (reconnectTimer.current) clearTimeout(reconnectTimer.current)
           reconnectTimer.current = setTimeout(() => setReconnectKey(k => k + 1), 10000)
         }
       })
     return () => {
+      active = false
       supabase.removeChannel(ch)
-      if (realtimeTimer.current) clearTimeout(realtimeTimer.current)
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current)
     }
   }, [level, loadAll, reconnectKey])
