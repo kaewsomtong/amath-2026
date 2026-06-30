@@ -192,6 +192,7 @@ export default function ScoringPage() {
       const r = computeMatchResult(sa, sb, cap)
       const winner = r.resultA === 'W' ? nameA : r.resultB === 'W' ? nameB : null
       setStatus({ msg: `✅ บันทึก${pfRound} — ${winner ? winner + ' ชนะ' : 'เสมอ'} (ผลต่าง ${diff > 0 ? '+' : ''}${diff})`, ok: true })
+      await loadPfPairs(pfRound)   // รีโหลดคู่รอบชิงให้ pill แสดงคะแนนล่าสุด ไม่ค้างค่าเก่า
     }
 
     clearForm(); setSubmitting(false)
