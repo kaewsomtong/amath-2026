@@ -47,10 +47,9 @@ export default function DisplayPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRotate, projector])
 
-  // Enable auto-rotate + fullscreen when projector turns on (no dark mode — ใช้พื้นขาวสำหรับหอประชุม)
+  // เข้า fullscreen เมื่อเปิด projector mode (ไม่ auto-rotate — กดเองเอา)
   useEffect(() => {
     if (projector) {
-      setAutoRotate(true)
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {})
       }
