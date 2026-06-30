@@ -411,32 +411,16 @@ export default function ScoringPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-sky-700 mb-1 text-center truncate">{nameA || 'ผู้เล่น A'}</label>
-              <div className="flex gap-1.5 items-center">
-                <button type="button"
-                  onClick={() => setScoreA(v => v.startsWith('-') ? v.slice(1) : v ? '-' + v : '-')}
-                  className={`shrink-0 w-11 h-14 rounded-xl text-xl font-black border-2 transition-all active:scale-95
-                    ${scoreA.startsWith('-') ? 'bg-red-100 border-red-300 text-red-600' : 'bg-sky-50 border-sky-200 text-sky-400'}`}>
-                  ±
-                </button>
-                <input ref={scoreARef} value={scoreA} onChange={e => setScoreA(e.target.value.replace(/[^0-9-]/g, '').replace(/(?!^)-/g, ''))}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); scoreBRef.current?.focus() } }}
-                  placeholder="0" type="text" inputMode="numeric"
-                  className="flex-1 px-2 py-4 border-2 border-sky-100 rounded-xl text-2xl font-black text-center bg-sky-50 focus:outline-none focus:border-sky-400" />
-              </div>
+              <input ref={scoreARef} value={scoreA} onChange={e => setScoreA(e.target.value.replace(/[^0-9]/g, ''))}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); scoreBRef.current?.focus() } }}
+                placeholder="0" type="text" inputMode="numeric" pattern="[0-9]*"
+                className="w-full px-3 py-4 border-2 border-sky-100 rounded-xl text-2xl font-black text-center bg-sky-50 focus:outline-none focus:border-sky-400" />
             </div>
             <div>
               <label className="block text-xs font-bold text-sky-700 mb-1 text-center truncate">{nameB || 'ผู้เล่น B'}</label>
-              <div className="flex gap-1.5 items-center">
-                <button type="button"
-                  onClick={() => setScoreB(v => v.startsWith('-') ? v.slice(1) : v ? '-' + v : '-')}
-                  className={`shrink-0 w-11 h-14 rounded-xl text-xl font-black border-2 transition-all active:scale-95
-                    ${scoreB.startsWith('-') ? 'bg-red-100 border-red-300 text-red-600' : 'bg-sky-50 border-sky-200 text-sky-400'}`}>
-                  ±
-                </button>
-                <input ref={scoreBRef} value={scoreB} onChange={e => setScoreB(e.target.value.replace(/[^0-9-]/g, '').replace(/(?!^)-/g, ''))}
-                  placeholder="0" type="text" inputMode="numeric"
-                  className="flex-1 px-2 py-4 border-2 border-sky-100 rounded-xl text-2xl font-black text-center bg-sky-50 focus:outline-none focus:border-sky-400" />
-              </div>
+              <input ref={scoreBRef} value={scoreB} onChange={e => setScoreB(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder="0" type="text" inputMode="numeric" pattern="[0-9]*"
+                className="w-full px-3 py-4 border-2 border-sky-100 rounded-xl text-2xl font-black text-center bg-sky-50 focus:outline-none focus:border-sky-400" />
             </div>
           </div>
 
