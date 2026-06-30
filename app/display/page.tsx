@@ -154,6 +154,10 @@ export default function DisplayPage() {
 
   const standingsToShow = standings
 
+  // นับเฉพาะโต๊ะที่ไม่ใช่ BYE (scoredPairs รวม BYE ที่ score_a=100 ไว้ด้วย จึงต้องกรองออก)
+  const tableTotal = pairings.filter(p => !p.is_bye).length
+  const tableScored = pairings.filter(p => !p.is_bye && scoredPairs.has(p.pair_num)).length
+
   // ── PROJECTOR LAYOUT ──
   if (projector) {
     return (
@@ -263,11 +267,11 @@ export default function DisplayPage() {
           {view === 'tables' && (
             <div className="h-full flex flex-col">
               <div className="px-4 py-2 rounded-2xl mb-4 text-white font-black text-2xl shrink-0" style={{ background: pk.thead }}>
-                🪑 คู่แข่งเกมที่ {latestGame} — {pairings.filter(p => !p.is_bye).length} คู่
+                🪑 คู่แข่งเกมที่ {latestGame} — {tableTotal} คู่
                 &nbsp;·&nbsp;
-                <span className="text-emerald-200">{scoredPairs.size} กรอกแล้ว</span>
+                <span className="text-emerald-200">{tableScored} กรอกแล้ว</span>
                 &nbsp;·&nbsp;
-                <span className="text-red-200">{pairings.filter(p => !p.is_bye).length - scoredPairs.size} คงเหลือ</span>
+                <span className="text-red-200">{tableTotal - tableScored} คงเหลือ</span>
               </div>
               <div className="flex-1 overflow-auto">
                 <div className="grid grid-cols-2 gap-3">

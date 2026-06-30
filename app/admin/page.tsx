@@ -166,6 +166,16 @@ export default function AdminPage() {
   useEffect(() => { loadData(); loadAllPlayers() }, [loadData, loadAllPlayers])
   useEffect(() => { if (showPlayers) loadAllPlayers() }, [showPlayers, loadAllPlayers])
 
+  // Realtime — อัปเดตความคืบหน้า/อันดับ/เสียงเตือน เมื่อเครื่องกรอกคะแนนส่งผลเข้ามา
+  useEffect(() => {
+    const ch = supabase.channel(`admin-${level}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'am_games', filter: `level=eq.${level}` }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'am_pairings', filter: `level=eq.${level}` }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'am_playoffs', filter: `level=eq.${level}` }, () => loadData())
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [level, loadData])
+
   useEffect(() => {
     if (!latestGame) return
     const { scored, total } = getGameProgress(latestGame)

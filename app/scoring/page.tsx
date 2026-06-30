@@ -194,13 +194,16 @@ export default function ScoringPage() {
       setStatus({ msg: `✅ บันทึก${pfRound} — ${winner ? winner + ' ชนะ' : 'เสมอ'} (ผลต่าง ${diff > 0 ? '+' : ''}${diff})`, ok: true })
     }
 
-    clearForm(); setSubmitting(false); setUserPickedGame(false)
+    clearForm(); setSubmitting(false)
+    // คงเกมที่เลือกไว้ถ้ากำลังตามกรอกเกมเก่า — รีเซ็ตให้ตามเกมล่าสุดเฉพาะเมื่อกรอกเกมล่าสุดอยู่แล้ว
+    if (mode === 'qualify' && game === latestGame) setUserPickedGame(false)
     setTimeout(() => pairNumRef.current?.focus(), 100)
   }
 
   async function submitResult(e: React.FormEvent) {
     e.preventDefault()
     if (scoreA === '' || scoreB === '') { alert('กรุณากรอกคะแนนทั้งสองฝั่ง'); return }
+    if (!Number.isInteger(Number(scoreA)) || !Number.isInteger(Number(scoreB))) { alert('คะแนนไม่ถูกต้อง — กรุณากรอกตัวเลข'); return }
     if (Number(scoreA) === Number(scoreB)) {
       if (!confirm(`⚠️ คะแนนเท่ากัน ${scoreA} – ${scoreB} (เสมอ)\nยืนยันบันทึกหรือไม่?`)) return
     }

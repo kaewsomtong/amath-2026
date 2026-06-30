@@ -165,13 +165,15 @@ export function computeStandings(players: Player[], games: GameRow[], totalGames
   })
 
   // จัดอันดับ (เสมอกันได้อันดับเท่ากัน) — เทียบ code.gs:387-396
-  // เสมอจริงต้องมีคะแนน/ผลต่าง/คะแนนดิบเท่ากัน และเล่นแล้วอย่างน้อย 1 เกม
+  // เสมอจริง = สถิติเท่ากันทุกค่า และสถานะการเล่นเหมือนกัน
+  // (เล่นแล้วทั้งคู่ หรือยังไม่เล่นทั้งคู่) — กันไม่ให้คนยังไม่เล่นเสมอกับคนที่เล่นแล้วได้ 0 แต้ม
   let rank = 1
   for (let i = 0; i < sorted.length; i++) {
     if (i > 0) {
       const p = sorted[i - 1], c = sorted[i]
-      const realTie = c.points === p.points && c.diffSum === p.diffSum && c.rawScoreSum === p.rawScoreSum
-        && c.gamesPlayed > 0 && p.gamesPlayed > 0
+      const sameStats = c.points === p.points && c.diffSum === p.diffSum && c.rawScoreSum === p.rawScoreSum
+      const samePlayedness = (c.gamesPlayed > 0) === (p.gamesPlayed > 0)
+      const realTie = sameStats && samePlayedness
       if (!realTie) rank = i + 1
     }
     sorted[i].rank = rank
